@@ -91,15 +91,57 @@ function remove_products_from_deleted_elite_category( $term_id, $tt_id, $taxonom
         }
     }
 }
-add_filter( 'the_title', 'add_elite_mark_to_title', 10, 2 );
-function add_elite_mark_to_title( $title, $id ) {
-    if ( ! is_admin() ) {
-        $is_elite_product = get_post_meta( $id, '_is_elite_product', true );
-        if ( $is_elite_product === 'yes' ) {
-            $image_url = 'https://static.vecteezy.com/system/resources/thumbnails/008/550/097/small/boy-illustration-sticker-free-png.png'; // Example image URL
-            $image_target_url = 'https://noorexpress.shop/elite/';
-            $product_permalink = get_permalink( $id );
-            $title = '<a href="' . $image_target_url . '"><img src="' . $image_url . '" alt="Elite Product" class="elite-image" /></a><a href="' . $product_permalink . '">' . $title . '</a>';
+
+// Add a menu item for the settings page
+add_action('admin_menu', 'elite_product_marker_menu');
+function elite_product_marker_menu() {
+    add_menu_page('Elite Product Settings', 'Elite Product Settings', 'manage_options', 'elite-product-settings', 'elite_product_marker_settings_page');
+}
+
+// Display the settings page
+function elite_product_marker_settings_page() {
+    ?>
+    <div class="wrap">
+        <h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
+        <form action="options.php" method="post">
+            <?php
+            // Output nonce, action, and settings fields
+            settings_fields('elite_product_marker_options_group');
+            do_settings_sections('elite-product-settings');
+            ?>
+            <table class="form-table">
+                <tr valign="top">
+                    <th scope="row"><?php _e('Elite Product Image URL', 'woocommerce'); ?></th>
+                    <td><input type="text" name="elite_product_image_url" value="<?php echo esc_attr( get_option('elite_product_image_url') ); ?>" class="regular-text" /></td>
+                </tr>
+                <tr valign="top">
+                    <th scope="row"><?php _e('Elite Product Target URL', 'woocommerce'); ?></th>
+                    <td><input type="text" name="elite_product_target_url" value="<?php echo esc_attr( get_option('elite_product_target_url') ); ?>" class="regular-text" /></td>
+                </tr>
+            </table>
+            <?php submit_button(); ?>
+        </form>
+    </div>
+    <?php
+}
+
+// Register the settings
+add_action('admin_init', 'elite_product_marker_settings_init');
+function elite_product_marker_settings_init() {
+    register_setting('elite_product_marker_options_group', 'elite_product_image_url');
+    register_setting('elite_product_marker_options_group', 'elite_product_target_url');
+}
+
+
+add_filter('the_title', 'add_elite_mark_to_title', 10, 2);
+function add_elite_mark_to_title($title, $id) {
+    if (!is_admin()) {
+        $is_elite_product = get_post_meta($id, '_is_elite_product', true);
+        if ($is_elite_product === 'yes') {
+            $image_url = get_option('elite_product_image_url', 'default-image-url'); // Get URL from settings
+            $image_target_url = get_option('elite_product_target_url', 'default-target-url'); // Get target URL from settings
+            $product_permalink = get_permalink($id);
+            $title = '<a href="' . esc_url($image_target_url) . '"><img src="' . esc_url($image_url) . '" alt="Elite Product" class="elite-image" /></a><a href="' . esc_url($product_permalink) . '">' . $title . '</a>';
         }
     }
     return $title;
